@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Issue - CivicFix</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Firebase compat SDK CDNs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+  
+  <!-- Leaflet Map CSS/JS via CDN (for location picking) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+  <!-- Dynamic Navigation Bar Injected by auth.js -->
+  <div id="navbar-container"></div>
+
+  <main class="container">
+    <div style="margin-bottom: 2rem;">
+      <h2 style="font-size: 2rem; color: var(--primary); font-weight: 800;">Report a Civic Issue</h2>
+      <p style="color: var(--text-muted-dark)">File a report. Our AI will classify the category and direct it to the correct department.</p>
+    </div>
+
+    <div class="grid-2">
+      <!-- Left Column: Form & Photo -->
+      <div class="card">
+        <form id="report-form">
+          <!-- Step 1: Upload Photo -->
+          <div class="form-group">
+            <label class="form-label">Step 1: Upload or Capture Photo</label>
+            <input type="file" id="issue-photo" accept="image/*" capture="environment" style="display:none;" required>
+            
+            <div id="upload-zone" class="upload-zone" onclick="document.getElementById('issue-photo').click()">
+              <div class="upload-icon">📸</div>
+              <p style="font-weight: 600;">Click to open Camera or Upload Photo</p>
+              <p style="font-size: 0.8rem; color: var(--text-muted-dark); margin-top: 0.25rem;">Supports PNG, JPEG. Captured files will be verified by Gemini AI.</p>
+            </div>
+            
+            <div id="preview-container" class="preview-container">
+              <img id="preview-img" class="preview-img" src="" alt="Issue preview">
+              <button type="button" id="preview-remove" class="preview-remove" title="Remove Photo">&times;</button>
+            </div>
+            
+            <!-- AI Classification Status Indicators -->
+            <div id="ai-status-container" style="display:none; margin-top: 0.75rem;">
+              <div id="ai-loading" class="ai-badge" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+                <span class="ai-spinner"></span> Analyzing photo with Gemini AI...
+              </div>
+              <div id="ai-result" class="ai-badge" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); display:none;">
+                🤖 Gemini AI: Categorized as <strong id="ai-category-text" style="margin-left: 0.25rem;">Garbage</strong>
+              </div>
+              <div id="ai-invalid" class="ai-badge" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); display:none;">
+                ⚠️ AI Flagged: Not a valid civic issue. Submission blocked.
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Details -->
+          <div class="form-group">
+            <label class="form-label" for="issue-category">Step 2: Verify Category</label>
+            <select id="issue-category" class="form-control form-select" required>
+              <option value="" disabled selected>Select category (or upload photo for AI auto-detect)</option>
+              <option value="Pothole">Pothole</option>
+              <option value="Garbage">Garbage</option>
+              <option value="Streetlight">Streetlight</option>
+              <option value="Sewage/Water Leakage">Sewage/Water Leakage</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="issue-description">Step 3: Describe the Issue</label>
+            <textarea id="issue-description" class="form-control" rows="4" placeholder="Describe the details of the problem (e.g. size of pothole, leak intensity, reference landmarks)..." required></textarea>
+          </div>
+
+          <button type="submit" id="submit-btn" class="btn btn-primary" style="width:100%; margin-top: 1rem;" disabled>
+            Submit Issue Report
+          </button>
+        </form>
+      </div>
+
+      <!-- Right Column: Location & Map -->
+      <div class="card">
+        <h3 class="card-title">📍 Location Pinpoint</h3>
+        <p style="color: var(--text-muted-dark); font-size: 0.9rem; margin-bottom: 1rem;">
+          Your browser location will be requested. You can drag the red pin on the map if you need to adjust the exact spot.
+        </p>
+        
+        <div id="location-map" style="height: 320px; border-radius: var(--radius-md); border: 1px solid var(--border-light); z-index: 1;"></div>
+        
+        <div class="grid-2" style="margin-top: 1rem; gap: 1rem;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" style="font-size:0.75rem;">Latitude</label>
+            <input type="number" id="gps-lat" class="form-control" step="any" readonly required>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" style="font-size:0.75rem;">Longitude</label>
+            <input type="number" id="gps-lng" class="form-control" step="any" readonly required>
+          </div>
+        </div>
+
+        <button type="button" id="refresh-gps-btn" class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 1rem;">
+          🔄 Re-fetch Current GPS Location
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- External JS Modules -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/report.js"></script>
+</body>
+</html>

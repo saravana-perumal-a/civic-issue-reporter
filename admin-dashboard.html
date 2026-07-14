@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - CivicFix</title>
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- Firebase compat SDK CDNs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+  
+  <!-- Chart.js via CDN (for rich dashboards) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .chart-container {
+      position: relative;
+      height: 250px;
+      width: 100%;
+      margin-top: 1rem;
+    }
+    
+    .admin-tabs {
+      display: flex;
+      border-bottom: 2px solid var(--border-light);
+      margin-bottom: 1.5rem;
+      gap: 0.5rem;
+    }
+    
+    .admin-tab {
+      background-color: transparent;
+      color: var(--text-muted-dark);
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+    }
+    
+    .admin-tab.active {
+      background-color: var(--primary);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <!-- Dynamic Navigation Bar Injected by auth.js -->
+  <div id="navbar-container"></div>
+
+  <main class="container" style="max-width:1300px;">
+    <div class="dash-header">
+      <div class="dash-title">
+        <h2>Municipal Administration Terminal</h2>
+        <p>Oversee municipal system metrics, filter issues, and configure department officers.</p>
+      </div>
+    </div>
+
+    <!-- Admin Tabs Menu -->
+    <div class="admin-tabs">
+      <button id="tab-analytics" class="btn admin-tab active">📊 System Metrics</button>
+      <button id="tab-tickets" class="btn admin-tab">📋 Issue Tickets</button>
+      <button id="tab-users" class="btn admin-tab">👥 User Roles Config</button>
+    </div>
+
+    <!-- TAB 1: ANALYTICS VIEW -->
+    <section id="section-analytics">
+      <!-- High Level Statistics Grid -->
+      <div class="admin-grid">
+        <div class="card" style="padding:1.25rem; margin-bottom:0;">
+          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted-dark); text-transform:uppercase;">Total Filed</div>
+          <div style="font-size:2rem; font-weight:800; color:var(--primary);" id="metric-total">0</div>
+        </div>
+        <div class="card" style="padding:1.25rem; margin-bottom:0;">
+          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted-dark); text-transform:uppercase;">Active / Open</div>
+          <div style="font-size:2rem; font-weight:800; color:var(--warning);" id="metric-open">0</div>
+        </div>
+        <div class="card" style="padding:1.25rem; margin-bottom:0;">
+          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted-dark); text-transform:uppercase;">Resolved</div>
+          <div style="font-size:2rem; font-weight:800; color:var(--success);" id="metric-resolved">0</div>
+        </div>
+        <div class="card" style="padding:1.25rem; margin-bottom:0;">
+          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted-dark); text-transform:uppercase;">Average Resolution</div>
+          <div style="font-size:1.6rem; font-weight:800; color:var(--info);" id="metric-avgtime">--</div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid-3" style="margin-bottom: 2rem;">
+        <div class="card" style="padding: 1.25rem;">
+          <h4 style="font-weight:700; color:var(--primary);">Issues by Category</h4>
+          <div class="chart-container">
+            <canvas id="chart-categories"></canvas>
+          </div>
+        </div>
+        <div class="card" style="padding: 1.25rem;">
+          <h4 style="font-weight:700; color:var(--primary);">Tickets Status Breakdown</h4>
+          <div class="chart-container">
+            <canvas id="chart-status"></canvas>
+          </div>
+        </div>
+        <div class="card" style="padding: 1.25rem;">
+          <h4 style="font-weight:700; color:var(--primary);">Department Workloads</h4>
+          <div class="chart-container">
+            <canvas id="chart-departments"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: TICKET DIRECTORY TABLE -->
+    <section id="section-tickets" style="display:none;">
+      <div class="card">
+        <!-- Search & Filter Controls -->
+        <div class="filter-bar">
+          <div class="filter-item">
+            <label class="form-label" style="font-size:0.75rem;">Search Description</label>
+            <input type="text" id="ticket-search" class="form-control" placeholder="Search keywords..." style="padding: 0.5rem 0.75rem; font-size:0.85rem;">
+          </div>
+          <div class="filter-item">
+            <label class="form-label" style="font-size:0.75rem;">Category</label>
+            <select id="ticket-filter-category" class="form-control form-select" style="padding: 0.5rem 0.75rem; font-size:0.85rem;">
+              <option value="ALL">All Categories</option>
+              <option value="Pothole">Pothole</option>
+              <option value="Garbage">Garbage</option>
+              <option value="Streetlight">Streetlight</option>
+              <option value="Sewage/Water Leakage">Sewage/Water Leakage</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label class="form-label" style="font-size:0.75rem;">Department</label>
+            <select id="ticket-filter-dept" class="form-control form-select" style="padding: 0.5rem 0.75rem; font-size:0.85rem;">
+              <option value="ALL">All Departments</option>
+              <option value="PWD">PWD</option>
+              <option value="Sanitation">Sanitation</option>
+              <option value="Electricity">Electricity</option>
+              <option value="Water">Water</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label class="form-label" style="font-size:0.75rem;">Status</label>
+            <select id="ticket-filter-status" class="form-control form-select" style="padding: 0.5rem 0.75rem; font-size:0.85rem;">
+              <option value="ALL">All Statuses</option>
+              <option value="Submitted">Submitted</option>
+              <option value="Acknowledged">Acknowledged</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Issue Table -->
+        <div class="table-responsive">
+          <table class="dash-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Department</th>
+                <th>Status</th>
+                <th>Votes</th>
+                <th>Reported Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tickets-table-body">
+              <tr>
+                <td colspan="7" style="text-align:center; color:var(--text-muted-dark); padding:2rem;">
+                  Loading tickets directory database...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: USER PROMOTION PANEL -->
+    <section id="section-users" style="display:none;">
+      <div class="card">
+        <h3 class="card-title">👥 Municipal Personnel Configuration</h3>
+        <p style="color:var(--text-muted-dark); font-size:0.85rem; margin-bottom:1.5rem;">
+          Assign roles to registered citizens. Officers must be assigned to a department to manage workload queues.
+        </p>
+
+        <div class="table-responsive">
+          <table class="dash-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Current Role</th>
+                <th>Department Assignment</th>
+                <th>Modify Access Permissions</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-body">
+              <tr>
+                <td colspan="5" style="text-align:center; color:var(--text-muted-dark); padding:2rem;">
+                  Loading accounts database...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Detailed Ticket Inspection Modal Overlay -->
+  <div id="details-modal-overlay" class="settings-overlay">
+    <div class="settings-modal" style="max-width: 600px;">
+      <div class="settings-header">
+        <h3>Inspection Report Details</h3>
+        <button class="btn btn-sm btn-outline" style="border:none; font-size:1.5rem; line-height:1;" onclick="closeDetailsModal()">&times;</button>
+      </div>
+      <div class="settings-body" id="details-modal-body">
+        <!-- Injected dynamically by admin.js -->
+      </div>
+      <div class="settings-footer">
+        <button class="btn btn-secondary btn-sm" onclick="closeDetailsModal()">Close Report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- External JS Modules -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

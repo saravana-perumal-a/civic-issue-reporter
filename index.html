@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicFix - Smart Civic Issue Reporting & Resolution</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Firebase compat SDK CDNs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+  <!-- Dynamic Navigation Bar Injected by auth.js -->
+  <div id="navbar-container"></div>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="hero-content">
+      <h1>Clean, Safe & Green Communities Start Here</h1>
+      <p>Report neighborhood issues such as potholes, garbage piles, sewage leaks, or broken streetlights. Empowered by AI auto-routing and real-time civic action tracking.</p>
+      <div class="hero-buttons">
+        <a href="report.html" class="btn btn-primary">Report an Issue</a>
+        <a href="map.html" class="btn btn-outline">Explore Map Portal</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats Grid -->
+  <section class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-val" id="stat-total">--</div>
+        <div class="stat-label">Total Issues</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-active" style="color: var(--warning);">--</div>
+        <div class="stat-label">Active / In Progress</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-resolved" style="color: var(--success);">--</div>
+        <div class="stat-label">Resolved Issues</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-rate">--</div>
+        <div class="stat-label">Resolution Rate</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works & Portal Features -->
+  <main class="container">
+    <div style="text-align: center; margin-bottom: 3rem;">
+      <h2 style="font-size: 2rem; color: var(--primary); font-weight: 800;">Modern Civic Collaboration</h2>
+      <p style="color: var(--text-muted-dark); max-width: 600px; margin: 0.5rem auto;">CivicFix connects citizens with public utilities departments seamlessly using smart technology.</p>
+    </div>
+
+    <div class="grid-3" style="margin-bottom: 4rem;">
+      <div class="feature-card">
+        <div class="feature-icon">📸</div>
+        <h3 class="feature-title">AI Powered Classification</h3>
+        <p class="feature-desc">Snap a photo on your device. Gemini AI automatically categorizes the issue and flags invalid images to avoid spam reporting.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📍</div>
+        <h3 class="feature-title">Automatic Geo-Tagging</h3>
+        <p class="feature-desc">Auto-extracts GPS locations. Detects duplicate reports reported by different citizens within a 50m radius and clusters priority.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚙️</div>
+        <h3 class="feature-title">Real-Time Dashboards</h3>
+        <p class="feature-desc">Automatic ticket routing to designated departments. Live dashboard tracking status changes from acknowledgement to resolution.</p>
+      </div>
+    </div>
+
+    <div class="card" style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 2rem; align-items: center; justify-content: space-between;">
+      <div style="flex: 1; min-width: 300px;">
+        <h3 style="font-size: 1.5rem; color: var(--primary); font-weight: 700; margin-bottom: 0.75rem;">Are you a Department Representative?</h3>
+        <p style="color: var(--text-muted-dark); margin-bottom: 1rem;">Log in to view work orders assigned specifically to your department. Manage task states and submit visual verification proof once repairs are complete.</p>
+        <a href="login.html" class="btn btn-secondary">Representative Login</a>
+      </div>
+      <div style="flex: 1; min-width: 300px; text-align: center; font-size: 5rem; padding: 2rem; background-color: var(--light-bg); border-radius: var(--radius-md);">
+        🏢🏛️
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer style="background-color: var(--dark-bg); color: var(--text-muted-light); padding: 3rem 2rem; text-align: center; border-top: 5px solid var(--primary); margin-top: 4rem;">
+    <p style="font-weight: 700; color: white; margin-bottom: 0.5rem;">CivicFix Portal &copy; 2026</p>
+    <p style="font-size: 0.85rem; margin-bottom: 1rem;">SIH Problem Statement SIH25031 | Theme: Clean & Green Technology</p>
+    <div style="display: flex; justify-content: center; gap: 1rem;">
+      <a href="#" onclick="toggleSettingsPanel(true); return false;" style="color: var(--success); text-decoration: none; font-size: 0.85rem; font-weight: 600;">Developer Configurations</a>
+    </div>
+  </footer>
+
+  <!-- External JS Modules -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  
+  <script>
+    // Fetch and calculate live statistics from Firestore
+    document.addEventListener("DOMContentLoaded", () => {
+      // Small timeout to wait for Firebase initialization
+      setTimeout(() => {
+        if (!db) {
+          // If not configured, load static mock stats
+          loadMockStats();
+          return;
+        }
+        
+        db.collection("issues").onSnapshot((snapshot) => {
+          let total = snapshot.size;
+          let active = 0;
+          let resolved = 0;
+          
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.status === "Resolved") {
+              resolved++;
+            } else {
+              active++;
+            }
+          });
+          
+          const rate = total > 0 ? Math.round((resolved / total) * 100) : 0;
+          
+          document.getElementById("stat-total").innerText = total;
+          document.getElementById("stat-active").innerText = active;
+          document.getElementById("stat-resolved").innerText = resolved;
+          document.getElementById("stat-rate").innerText = rate + "%";
+        }, (error) => {
+          console.error("Error listening to stats:", error);
+          loadMockStats();
+        });
+      }, 500);
+    });
+
+    function loadMockStats() {
+      // Mock stats for display when Firebase is not configured
+      document.getElementById("stat-total").innerText = "142";
+      document.getElementById("stat-active").innerText = "38";
+      document.getElementById("stat-resolved").innerText = "104";
+      document.getElementById("stat-rate").innerText = "73%";
+    }
+  </script>
+</body>
+</html>

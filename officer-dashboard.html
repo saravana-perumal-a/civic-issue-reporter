@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Officer Dashboard - CivicFix</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Firebase compat SDK CDNs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+  <!-- Dynamic Navigation Bar Injected by auth.js -->
+  <div id="navbar-container"></div>
+
+  <main class="container">
+    <div class="dash-header">
+      <div class="dash-title">
+        <h2 id="dept-title">Officer Panel</h2>
+        <p id="officer-welcome">Loading your assigned department workload...</p>
+      </div>
+    </div>
+
+    <!-- Mini Statistics Cards -->
+    <div class="grid-3" style="margin-bottom: 2rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+      <div class="card" style="padding: 1.25rem; margin-bottom: 0; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted-dark); text-transform:uppercase;">Pending Action</div>
+          <div style="font-size:1.75rem; font-weight:800; color:var(--danger);" id="count-pending">0</div>
+        </div>
+        <span style="font-size:2rem;">📥</span>
+      </div>
+      <div class="card" style="padding: 1.25rem; margin-bottom: 0; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted-dark); text-transform:uppercase;">In Progress</div>
+          <div style="font-size:1.75rem; font-weight:800; color:var(--warning);" id="count-progress">0</div>
+        </div>
+        <span style="font-size:2rem;">🛠️</span>
+      </div>
+      <div class="card" style="padding: 1.25rem; margin-bottom: 0; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted-dark); text-transform:uppercase;">Resolved</div>
+          <div style="font-size:1.75rem; font-weight:800; color:var(--success);" id="count-resolved">0</div>
+        </div>
+        <span style="font-size:2rem;">✅</span>
+      </div>
+    </div>
+
+    <!-- Toggle Tabs -->
+    <div style="display:flex; border-bottom: 2px solid var(--border-light); margin-bottom: 1.5rem; gap: 0.5rem;">
+      <button id="tab-active" class="btn btn-sm" style="background-color: var(--primary); color: white; border-radius: var(--radius-sm) var(--radius-sm) 0 0; padding: 0.75rem 1.5rem;">
+        Active Tasks
+      </button>
+      <button id="tab-resolved" class="btn btn-sm" style="background-color: transparent; color: var(--text-muted-dark); border-radius: var(--radius-sm) var(--radius-sm) 0 0; padding: 0.75rem 1.5rem;">
+        Resolved History
+      </button>
+    </div>
+
+    <!-- Work order Feed List -->
+    <div id="officer-tickets-feed" class="grid-2">
+      <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+        <span style="font-size: 2rem;">🔄</span>
+        <p style="margin-top: 1rem; color: var(--text-muted-dark);">Loading assigned work orders...</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Mark Resolved Proof Modal -->
+  <div id="resolve-modal-overlay" class="settings-overlay">
+    <div class="settings-modal" style="max-width: 450px;">
+      <div class="settings-header">
+        <h3>Submit Resolution Proof</h3>
+        <button class="btn btn-sm btn-outline" style="border:none; font-size:1.5rem; line-height:1;" onclick="closeResolveModal()">&times;</button>
+      </div>
+      <form id="resolve-form">
+        <div class="settings-body">
+          <input type="hidden" id="resolve-ticket-id">
+          
+          <div class="form-group">
+            <label class="form-label">Upload Repair Proof Photo</label>
+            <input type="file" id="resolve-photo" accept="image/*" style="display:none;" required>
+            
+            <div id="resolve-upload-zone" class="upload-zone" onclick="document.getElementById('resolve-photo').click()">
+              <div class="upload-icon">📸</div>
+              <p style="font-weight: 600;">Capture or Upload proof</p>
+              <p style="font-size: 0.75rem; color: var(--text-muted-dark); margin-top: 0.25rem;">Visual proof is visible to the citizen and admins.</p>
+            </div>
+            
+            <div id="resolve-preview-container" class="preview-container">
+              <img id="resolve-preview-img" class="preview-img" src="" alt="Proof preview">
+              <button type="button" id="resolve-preview-remove" class="preview-remove" title="Remove Proof">&times;</button>
+            </div>
+          </div>
+        </div>
+        <div class="settings-footer">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeResolveModal()">Cancel</button>
+          <button type="submit" id="resolve-submit-btn" class="btn btn-primary btn-sm" disabled>Confirm Resolution</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- External JS Modules -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/officer.js"></script>
+</body>
+</html>
